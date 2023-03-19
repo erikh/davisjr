@@ -30,7 +30,7 @@ where
     }
 }
 
-/// General errors for ratpack handlers. Yield either a StatusCode for a literal status, or a
+/// General errors for davisjr handlers. Yield either a StatusCode for a literal status, or a
 /// String for a 500 Internal Server Error. Other status codes should be yielded through
 /// [http::Response] returns.
 #[derive(Clone, Debug)]
@@ -113,11 +113,11 @@ impl TransientState for NoState {
     }
 }
 
-/// A convenience import to gather all of `ratpack`'s dependencies in one easy place.
+/// A convenience import to gather all of `davisjr`'s dependencies in one easy place.
 /// To use:
 ///
 /// ```
-///     use ratpack::prelude::*;
+///     use davisjr::prelude::*;
 /// ```
 pub mod prelude {
     pub use crate::{

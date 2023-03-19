@@ -12,7 +12,7 @@ use hyper::Body;
 /// Example:
 ///
 /// ```
-/// use ratpack::prelude::*;
+/// use davisjr::prelude::*;
 ///
 /// async fn hello(
 ///     req: Request<Body>,

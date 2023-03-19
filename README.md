@@ -1,14 +1,16 @@
-# ratpack: a simpleton's HTTP framework (for rust-lang)
+# davisjr: a simpleton's HTTP framework (for rust-lang)
 
-`ratpack` is idealized in the simplicity of the [sinatra](http://sinatrarb.com/) (ruby) framework in its goal, and attempts to be an alternative to other async HTTP frameworks such as [tower](https://github.com/tower-rs/tower), [warp](https://github.com/seanmonstar/warp), [axum](https://github.com/tokio-rs/axum), and [tide](https://github.com/http-rs/tide).
+`davisjr` is idealized in the simplicity of the [sinatra](http://sinatrarb.com/) (ruby) framework in its goal, and attempts to be an alternative to other async HTTP frameworks such as [tower](https://github.com/tower-rs/tower), [warp](https://github.com/seanmonstar/warp), [axum](https://github.com/tokio-rs/axum), and [tide](https://github.com/http-rs/tide).
 
-`ratpack` tries to deliver a promise that _any handler can also be middleware_, by implementing a "chain of responsibility" pattern that crosses handler boundaries. In summary, what you return from the first handler is fed to the second, which returns to the third, until all handlers are processed, or an error is received. Errors can return valid status codes or plain text errors in the form of a HTTP 500 (Internal Service Error).
+`davisjr` tries to deliver a promise that _any handler can also be middleware_, by implementing a "chain of responsibility" pattern that crosses handler boundaries. In summary, what you return from the first handler is fed to the second, which returns to the third, until all handlers are processed, or an error is received. Errors can return valid status codes or plain text errors in the form of a HTTP 500 (Internal Service Error).
 
-## What ratpack is not
+`davisjr` used to be [ratpack](https://github.com/zerotier/ratpack), a framework designed for ZeroTier, Inc. To the best of my knowledge, it is not receiving updates, and has not since April, 2022. I am hard-forking it to improve on it.
 
-- Complicated: `ratpack` is not especially designed for services with a large web of routes or complicated interactions with the HTTP protocol, such as SSE or Websockets (at this time, at least). `ratpack` is very focused on somewhat typical request/response cycles.
-- Verbose: `ratpack` tries very hard to make both its internals and your interaction with it _the simplest thing that could possibly work_. This means that your request handlers are functions you pass to a macro called `compose_handler!` which you pass to routing calls, and that likely, you won't be spending your time implementing complicated, extremely verbose traits or even need complicated understandings of how futures and `async` work.
-- Focused on one platform: while at this time we only directly support `tokio`, nothing is keeping us from moving into `smol` and `async-std`'s territory. The majority of `ratpack`'s use of `async` are futures that `tokio` ends up leveraging from a very high level.
+## What davisjr is not
+
+- Complicated: `davisjr` is not especially designed for services with a large web of routes or complicated interactions with the HTTP protocol, such as SSE or Websockets (at this time, at least). `davisjr` is very focused on somewhat typical request/response cycles.
+- Verbose: `davisjr` tries very hard to make both its internals and your interaction with it _the simplest thing that could possibly work_. This means that your request handlers are functions you pass to a macro called `compose_handler!` which you pass to routing calls, and that likely, you won't be spending your time implementing complicated, extremely verbose traits or even need complicated understandings of how futures and `async` work.
+- Focused on one platform: while at this time we only directly support `tokio`, nothing is keeping us from moving into `smol` and `async-std`'s territory. The majority of `davisjr`'s use of `async` are futures that `tokio` ends up leveraging from a very high level.
 
 ## Example
 
@@ -17,7 +19,7 @@ Here is an example which carries global _application state_ as an authentication
 **Note:** this is available at [examples/auth-with-state.rs](examples/auth-with-state.rs). It can also be run with cargo: `cargo run --example auth-with-state`.
 
 ```rust
-use ratpack::prelude::*;
+use davisjr::prelude::*;
 
 // We'll use authstate to (optionally) capture information about the token
 // being correct. if it is Some(true), the user was authed, if None, there was no
@@ -95,7 +97,7 @@ struct State {
 }
 
 // ServerError is a catch-all for errors returned by serving content through
-// ratpack.
+// davisjr.
 #[tokio::main]
 async fn main() -> Result<(), ServerError> {
     let mut app = App::with_state(State {
@@ -131,11 +133,11 @@ hello, erik!
 
 ## More information & documentation
 
-For more information, see the [docs](https://docs.rs/ratpack/latest/ratpack/).
+For more information, see the [docs](https://docs.rs/davisjr/latest/davisjr/).
 
 ## Author
 
-Erik Hollensbe <erik.hollensbe@zerotier.com>
+Erik Hollensbe <erik+github@hollensbe.org>
 
 ## License
 

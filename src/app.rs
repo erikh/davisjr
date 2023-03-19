@@ -335,7 +335,7 @@ impl<S: 'static + Clone + Send, T: TransientState + 'static + Clone + Send> App<
     }
 }
 
-/// TestApp is a testing framework for ratpack applications. Given an App, it can issue mock
+/// TestApp is a testing framework for davisjr applications. Given an App, it can issue mock
 /// requests to it without standing up a typical web server.
 #[derive(Clone)]
 pub struct TestApp<S: Clone + Send + 'static, T: TransientState + 'static + Clone + Send> {

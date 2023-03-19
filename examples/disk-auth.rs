@@ -1,4 +1,4 @@
-use ratpack::prelude::*;
+use davisjr::prelude::*;
 
 const DEFAULT_AUTHTOKEN: &str = "867-5309";
 const AUTHTOKEN_FILENAME: &str = "authtoken.secret";

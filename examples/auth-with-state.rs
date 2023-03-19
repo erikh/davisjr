@@ -1,4 +1,4 @@
-use ratpack::prelude::*;
+use davisjr::prelude::*;
 
 // We'll use authstate to (optionally) capture information about the token
 // being correct. if it is Some(true), the user was authed, if None, there was no
@@ -82,7 +82,7 @@ struct State {
 }
 
 // ServerError is a catch-all for errors returned by serving content through
-// ratpack.
+// davisjr.
 #[tokio::main]
 async fn main() -> Result<(), ServerError> {
     let mut app = App::with_state(State {
