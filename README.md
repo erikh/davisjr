@@ -98,13 +98,13 @@ async fn wildcard(
     _app: App<State, NoState>,
     _state: NoState,
 ) -> HTTPResult<AuthedState> {
-  let bytes = Body::from(format!("this route is: {}!\n", params.get("*").unwrap()));
+    let bytes = Body::from(format!("this route is: {}!\n", params.get("*").unwrap()));
 
-  return Ok((
+    return Ok((
         req,
         Some(Response::builder().status(200).body(bytes).unwrap()),
         NoState {},
-  ));
+    ));
 }
 
 // Our global application state; must be `Clone`.
