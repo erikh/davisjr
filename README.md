@@ -90,6 +90,23 @@ async fn hello(
     Err(Error::StatusCode(StatusCode::UNAUTHORIZED))
 }
 
+// our `wildcard` responder, which shows how to use wildcard routes
+async fn wildcard(
+    req: Request<Body>,
+    _resp: Option<Response<Body>>,
+    params: Params,
+    _app: App<State, NoState>,
+    _state: NoState,
+) -> HTTPResult<AuthedState> {
+  let bytes = Body::from(format!("this route is: {}!\n", params.get("*").unwrap()));
+
+  return Ok((
+        req,
+        Some(Response::builder().status(200).body(bytes).unwrap()),
+        NoState {},
+  ));
+}
+
 // Our global application state; must be `Clone`.
 #[derive(Clone)]
 struct State {
@@ -103,8 +120,10 @@ async fn main() -> Result<(), ServerError> {
     let mut app = App::with_state(State {
         authtoken: "867-5309",
     });
-    app.get("/auth/:name", compose_handler!(validate_authtoken, hello));
-    app.get("/:name", compose_handler!(hello));
+
+    app.get("/wildcard/*", compose_handler!(wildcard)).unwrap();
+    app.get("/auth/:name", compose_handler!(validate_authtoken, hello)).unwrap();
+    app.get("/:name", compose_handler!(hello)).unwrap();
 
     app.serve("127.0.0.1:3000").await?;
 
@@ -115,6 +134,9 @@ async fn main() -> Result<(), ServerError> {
 Hitting this service with `curl` gives the result you'd expect:
 
 ```
+% curl localhost:3000/wildcard/frobnik/from/zorbo
+this route is: frobnik/from/zorbo!
+
 % curl localhost:3000/erik
 hello, erik!
 

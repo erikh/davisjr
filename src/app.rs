@@ -19,26 +19,31 @@ use crate::{handler::Handler, router::Router, Error, ServerError, TransientState
 ///         req: Request<Body>,
 ///         resp: Option<Response<Body>>,
 ///         params: Params,
-///         app: App<()>
-///   ) -> HTTPResult {
+///         app: App<NoState>
+///         state: NoState,
+///   ) -> HTTPResult<NoState> {
+///     println!("item: {}", params["item"]);
+///     println!("route: {}", params["*"]);
+///
 ///     Ok((
 ///        req,
 ///        Response::builder().
 ///             status(StatusCode::OK).
 ///             body(Body::default()).
-///             unwrap()
+///             unwrap(),
+///        NoState {},
 ///     ))
 ///   }
 ///
 ///   #[tokio::main]
 ///   async fn main() -> Result<(), ServerError> {
 ///     let app = App::new();
-///     app.get("/:item", compose_handler!(item));
+///     app.get("/*/item/:item", compose_handler!(item)).unwrap();
 ///     app.serve("localhost:0").await
 ///   }
 /// ```
 ///
-/// Note that App here has _no state_. It will have a type signature of `App<()>`. To carry state,
+/// Note that App here has _no state_. It will have a type signature of `App<NoState>`. To carry state,
 /// look at the `with_state` method which will change the type signature of the `item` call (and
 /// other handlers).
 ///
@@ -47,7 +52,14 @@ use crate::{handler::Handler, router::Router, Error, ServerError, TransientState
 ///
 /// Paths should always start with `/`. Paths that are dynamic have member components that start
 /// with `:`. For example, `/a/b/c` will always only match one route, while `/a/:b/c` will match
-/// any route with `/a/<anything>/c`.
+/// any route with `/a/<any single path component>/c`.
+///
+/// A single wildcard can be specified with `*`. Its parameter will be called '*' and will
+/// correspond to the inner path that filled it. Currently, multiple paths that match due to a
+/// wildcard are undefined behavior; and there are some rules around wildcard paths:
+///
+/// - There may be only one wildcard component in a path (for now; this may change)
+/// - Wildcard components may not be immediately followed by a named parameter, due to ambiguity.
 ///
 /// Variadic path components are accessible through the [crate::Params] implementation. Paths are
 /// typically used through [crate::app::App] methods that use a string form of the Path.
