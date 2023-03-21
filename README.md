@@ -55,7 +55,10 @@ async fn validate_authtoken(
         authstate.authed = Some(state.clone().lock().await.authtoken == token);
         Ok((req, resp, authstate))
     } else {
-        Err(Error::StatusCode(StatusCode::UNAUTHORIZED))
+        Err(Error::StatusCode(
+            StatusCode::UNAUTHORIZED,
+            String::default(),
+        ))
     }
 }
 
@@ -87,7 +90,10 @@ async fn hello(
         ));
     }
 
-    Err(Error::StatusCode(StatusCode::UNAUTHORIZED))
+    Err(Error::StatusCode(
+        StatusCode::UNAUTHORIZED,
+        String::default(),
+    ))
 }
 
 // our `wildcard` responder, which shows how to use wildcard routes
@@ -95,15 +101,15 @@ async fn wildcard(
     req: Request<Body>,
     _resp: Option<Response<Body>>,
     params: Params,
-    _app: App<State, NoState>,
-    _state: NoState,
+    _app: App<State, AuthedState>,
+    state: AuthedState,
 ) -> HTTPResult<AuthedState> {
     let bytes = Body::from(format!("this route is: {}!\n", params.get("*").unwrap()));
 
     return Ok((
         req,
         Some(Response::builder().status(200).body(bytes).unwrap()),
-        NoState {},
+        state,
     ));
 }
 
@@ -122,7 +128,8 @@ async fn main() -> Result<(), ServerError> {
     });
 
     app.get("/wildcard/*", compose_handler!(wildcard)).unwrap();
-    app.get("/auth/:name", compose_handler!(validate_authtoken, hello)).unwrap();
+    app.get("/auth/:name", compose_handler!(validate_authtoken, hello))
+        .unwrap();
     app.get("/:name", compose_handler!(hello)).unwrap();
 
     app.serve("127.0.0.1:3000").await?;
