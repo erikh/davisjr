@@ -89,56 +89,65 @@ impl<S: 'static + Clone + Send, T: TransientState + 'static + Clone + Send> App<
 
     /// Create a route for a GET request. See App's docs and [crate::handler::Handler] for
     /// more information.
-    pub fn get(&mut self, path: &str, ch: Handler<S, T>) {
-        self.router.add(Method::GET, path.to_string(), ch);
+    pub fn get(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), Error> {
+        self.router.add(Method::GET, path.to_string(), ch)?;
+        Ok(())
     }
 
     /// Create a route for a POST request. See App's docs and [crate::handler::Handler] for
     /// more information.
-    pub fn post(&mut self, path: &str, ch: Handler<S, T>) {
-        self.router.add(Method::POST, path.to_string(), ch);
+    pub fn post(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), Error> {
+        self.router.add(Method::POST, path.to_string(), ch)?;
+        Ok(())
     }
 
     /// Create a route for a DELETE request. See App's docs and [crate::handler::Handler] for
     /// more information.
-    pub fn delete(&mut self, path: &str, ch: Handler<S, T>) {
-        self.router.add(Method::DELETE, path.to_string(), ch);
+    pub fn delete(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), Error> {
+        self.router.add(Method::DELETE, path.to_string(), ch)?;
+        Ok(())
     }
 
     /// Create a route for a PUT request. See App's docs and [crate::handler::Handler] for
     /// more information.
-    pub fn put(&mut self, path: &str, ch: Handler<S, T>) {
-        self.router.add(Method::PUT, path.to_string(), ch);
+    pub fn put(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), Error> {
+        self.router.add(Method::PUT, path.to_string(), ch)?;
+        Ok(())
     }
 
     /// Create a route for an OPTIONS request. See App's docs and
     /// [crate::handler::Handler] for more information.
-    pub fn options(&mut self, path: &str, ch: Handler<S, T>) {
-        self.router.add(Method::OPTIONS, path.to_string(), ch);
+    pub fn options(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), Error> {
+        self.router.add(Method::OPTIONS, path.to_string(), ch)?;
+        Ok(())
     }
 
     /// Create a route for a PATCH request. See App's docs and
     /// [crate::handler::Handler] for more information.
-    pub fn patch(&mut self, path: &str, ch: Handler<S, T>) {
-        self.router.add(Method::PATCH, path.to_string(), ch);
+    pub fn patch(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), Error> {
+        self.router.add(Method::PATCH, path.to_string(), ch)?;
+        Ok(())
     }
 
     /// Create a route for a HEAD request. See App's docs and
     /// [crate::handler::Handler] for more information.
-    pub fn head(&mut self, path: &str, ch: Handler<S, T>) {
-        self.router.add(Method::HEAD, path.to_string(), ch);
+    pub fn head(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), Error> {
+        self.router.add(Method::HEAD, path.to_string(), ch)?;
+        Ok(())
     }
 
     /// Create a route for a CONNECT request. See App's docs and
     /// [crate::handler::Handler] for more information.
-    pub fn connect(&mut self, path: &str, ch: Handler<S, T>) {
-        self.router.add(Method::CONNECT, path.to_string(), ch);
+    pub fn connect(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), Error> {
+        self.router.add(Method::CONNECT, path.to_string(), ch)?;
+        Ok(())
     }
 
     /// Create a route for a TRACE request. See App's docs and
     /// [crate::handler::Handler] for more information.
-    pub fn trace(&mut self, path: &str, ch: Handler<S, T>) {
-        self.router.add(Method::TRACE, path.to_string(), ch);
+    pub fn trace(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), Error> {
+        self.router.add(Method::TRACE, path.to_string(), ch)?;
+        Ok(())
     }
 
     /// Dispatch a route based on the request. Returns a response based on the error status of the

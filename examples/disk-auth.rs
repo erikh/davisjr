@@ -52,8 +52,9 @@ async fn hello(
 #[tokio::main]
 async fn main() -> Result<(), ServerError> {
     let mut app = App::new();
-    app.get("/auth/:name", compose_handler!(validate_authtoken, hello));
-    app.get("/:name", compose_handler!(hello));
+    app.get("/auth/:name", compose_handler!(validate_authtoken, hello))
+        .unwrap();
+    app.get("/:name", compose_handler!(hello)).unwrap();
 
     app.serve("127.0.0.1:3000").await?;
 

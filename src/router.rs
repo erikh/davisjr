@@ -34,12 +34,12 @@ impl<S: Clone + Send, T: TransientState> Ord for Route<S, T> {
 }
 
 impl<S: Clone + Send, T: TransientState> Route<S, T> {
-    fn new(method: http::Method, path: String, handler: Handler<S, T>) -> Self {
-        Self {
+    fn new(method: http::Method, path: String, handler: Handler<S, T>) -> Result<Self, Error> {
+        Ok(Self {
             method,
             handler,
-            path: Path::new(path),
-        }
+            path: Path::new(path)?,
+        })
     }
 
     async fn dispatch(
@@ -70,9 +70,14 @@ impl<S: Clone + Send, T: TransientState + Clone + Send> Router<S, T> {
         Self(Vec::new())
     }
 
-    pub(crate) fn add(&mut self, method: http::Method, path: String, ch: Handler<S, T>) -> Self {
-        self.0.push(Route::new(method, path, ch));
-        self.clone()
+    pub(crate) fn add(
+        &mut self,
+        method: http::Method,
+        path: String,
+        ch: Handler<S, T>,
+    ) -> Result<Self, Error> {
+        self.0.push(Route::new(method, path, ch)?);
+        Ok(self.clone())
     }
 
     pub(crate) async fn dispatch(
@@ -83,13 +88,13 @@ impl<S: Clone + Send, T: TransientState + Clone + Send> Router<S, T> {
         let path = req.uri().path().to_string();
 
         for route in self.0.clone() {
-            if route.path.matches(path.to_string()) && route.method.eq(req.method()) {
+            if route.path.matches(path.to_string())? && route.method.eq(req.method()) {
                 let (_, response, _) = route
                     .dispatch(path.to_string(), req, app, T::initial())
                     .await?;
                 if response.is_none() {
                     return Err(Error::StatusCode(
-                        http::StatusCode::INTERNAL_SERVER_ERROR,
+                        http::StatusCode::NOT_FOUND,
                         String::new(),
                     ));
                 }
@@ -144,7 +149,8 @@ mod tests {
                 },
                 None,
             ),
-        );
+        )
+        .unwrap();
 
         assert!(route
             .dispatch("/a".to_string(), Request::default(), App::new(), NoState {})
@@ -243,7 +249,8 @@ mod tests {
                 },
                 None,
             ),
-        );
+        )
+        .unwrap();
 
         assert!(route
             .dispatch("/a".to_string(), Request::default(), App::new(), NoState {})
@@ -397,33 +404,39 @@ mod tests {
 
         let mut router = Router::new();
 
-        router.add(
-            Method::GET,
-            "/a/b/c".to_string(),
-            Handler::new(
-                |req, resp, params, app, state| {
-                    Box::pin(handler_static(req, resp, params, app, state))
-                },
-                None,
-            ),
-        );
+        router
+            .add(
+                Method::GET,
+                "/a/b/c".to_string(),
+                Handler::new(
+                    |req, resp, params, app, state| {
+                        Box::pin(handler_static(req, resp, params, app, state))
+                    },
+                    None,
+                ),
+            )
+            .unwrap();
 
-        router.add(
-            Method::GET,
-            "/c/b/a/:name".to_string(),
-            Handler::new(
-                |req, resp, params, app, state| {
-                    Box::pin(handler_dynamic(req, resp, params, app, state))
-                },
-                None,
-            ),
-        );
+        router
+            .add(
+                Method::GET,
+                "/c/b/a/:name".to_string(),
+                Handler::new(
+                    |req, resp, params, app, state| {
+                        Box::pin(handler_dynamic(req, resp, params, app, state))
+                    },
+                    None,
+                ),
+            )
+            .unwrap();
 
-        router.add(
-            Method::GET,
-            "/with_state/:name".to_string(),
-            compose_handler!(handler_dynamic, handler_continued),
-        );
+        router
+            .add(
+                Method::GET,
+                "/with_state/:name".to_string(),
+                compose_handler!(handler_dynamic, handler_continued),
+            )
+            .unwrap();
 
         let response = router
             .dispatch(
