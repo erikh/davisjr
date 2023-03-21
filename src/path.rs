@@ -109,11 +109,7 @@ impl Path {
         for part in parts {
             if wildcard {
                 match &self.0[i] {
-                    RoutePart::Wildcard => {
-                        return Err(Error::new(
-                            "no more than one wildcard may be used in a path",
-                        ));
-                    }
+                    RoutePart::Wildcard => wildcard_vec.push(part.clone()),
                     RoutePart::Param(_) => {
                         return Err(Error::new(
                             "params may not immediately follow wildcards due to ambiguity",
@@ -124,8 +120,9 @@ impl Path {
                             wildcard = false;
                             i += 1;
                             params.insert("*".to_string(), wildcard_vec.join("/"));
+                        } else {
+                            wildcard_vec.push(part.clone())
                         }
-                        wildcard_vec.push(part.clone())
                     }
                     RoutePart::Leader => {
                         return Err(Error::new(
@@ -150,8 +147,14 @@ impl Path {
                     RoutePart::Leader => {}
                 };
 
-                i += 1;
+                if self.0.len() - 1 > i {
+                    i += 1;
+                }
             }
+        }
+
+        if wildcard {
+            params.insert("*".to_string(), wildcard_vec.join("/"));
         }
 
         Ok(params)
@@ -328,6 +331,15 @@ mod tests {
         let mut p = Params::new();
         p.insert("*".to_string(), "foo/bar".to_string());
         p.insert("test".to_string(), "quux".to_string());
-        assert_eq!(path.extract("/abc/foo/bar/a/quux".to_string()).unwrap(), p)
+        assert_eq!(path.extract("/abc/foo/bar/a/quux".to_string()).unwrap(), p);
+
+        let path = Path::new("/wildcard/*".to_string()).unwrap();
+        let mut p = Params::new();
+        p.insert("*".to_string(), "frobnik/from/zorbo".to_string());
+        assert_eq!(
+            path.extract("/wildcard/frobnik/from/zorbo".to_string())
+                .unwrap(),
+            p
+        )
     }
 }
