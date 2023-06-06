@@ -90,7 +90,7 @@ where
 mod tests {
     #[tokio::test]
     async fn test_handler_basic() {
-        use crate::{app::App, Error, HTTPResult, NoState, Params};
+        use crate::{app::App, errors::Error, HTTPResult, NoState, Params};
         use http::{HeaderValue, Request, Response, StatusCode};
         use hyper::Body;
 

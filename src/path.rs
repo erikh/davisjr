@@ -1,4 +1,4 @@
-use crate::{Error, Params};
+use crate::{errors::*, Params};
 
 #[derive(Debug, Clone, PartialOrd, PartialEq)]
 pub(crate) enum RoutePart {
@@ -20,7 +20,7 @@ impl Ord for Path {
 }
 
 impl Path {
-    pub(crate) fn new(path: String) -> Result<Self, Error> {
+    pub(crate) fn new(path: String) -> Result<Self, ServerError> {
         let mut parts = Self::default();
 
         let path = path.trim_end_matches("/");
@@ -36,16 +36,16 @@ impl Path {
             if arg.starts_with(":") {
                 // is param
                 if wildcard {
-                    return Err(Error::new(
-                        "params may not immediately follow wildcards due to ambiguity",
+                    return Err(ServerError(
+                        "params may not immediately follow wildcards due to ambiguity".to_string(),
                     ));
                 } else {
                     parts.push(RoutePart::Param(arg.trim_start_matches(":").to_string()));
                 };
             } else if arg == "*" {
                 if wildcard {
-                    return Err(Error::new(
-                        "no more than one wildcard may be used in a path",
+                    return Err(ServerError(
+                        "no more than one wildcard may be used in a path".to_string(),
                     ));
                 } else {
                     parts.push(RoutePart::Wildcard);
@@ -84,15 +84,15 @@ impl Path {
         params
     }
 
-    pub(crate) fn extract(&self, provided: String) -> Result<Params, Error> {
+    pub(crate) fn extract(&self, provided: String) -> Result<Params, ServerError> {
         let trimmed = provided.trim_end_matches("/");
 
         if trimmed == "" && self.eq(&Self::default()) {
             return Ok(Params::default());
         }
 
-        if !self.matches(provided.clone())? {
-            return Err(Error::new("route does not match"));
+        if !self.matches(provided.clone()).unwrap_or(false) {
+            return Err(ServerError("route does not match".to_string()));
         }
 
         let mut params = Params::default();
@@ -111,8 +111,9 @@ impl Path {
                 match &self.0[i] {
                     RoutePart::Wildcard => wildcard_vec.push(part.clone()),
                     RoutePart::Param(_) => {
-                        return Err(Error::new(
-                            "params may not immediately follow wildcards due to ambiguity",
+                        return Err(ServerError(
+                            "params may not immediately follow wildcards due to ambiguity"
+                                .to_string(),
                         ));
                     }
                     RoutePart::PathComponent(p) => {
@@ -125,8 +126,8 @@ impl Path {
                         }
                     }
                     RoutePart::Leader => {
-                        return Err(Error::new(
-                            "Leaders may not follow wildcards. How'd you get here? :)",
+                        return Err(ServerError(
+                            "Leaders may not follow wildcards. How'd you get here? :)".to_string(),
                         ))
                     }
                 }
@@ -141,7 +142,9 @@ impl Path {
                     }
                     RoutePart::PathComponent(path_part) => {
                         if &part != path_part {
-                            return Err(Error::new("invalid path for parameter extraction"));
+                            return Err(ServerError(
+                                "invalid path for parameter extraction".to_string(),
+                            ));
                         }
                     }
                     RoutePart::Leader => {}

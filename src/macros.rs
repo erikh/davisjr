@@ -42,7 +42,7 @@ mod tests {
         use http::{HeaderValue, Request, Response, StatusCode};
         use hyper::Body;
 
-        use crate::{app::App, Error, HTTPResult, NoState, Params};
+        use crate::{app::App, errors::Error, HTTPResult, NoState, Params};
 
         #[derive(Clone)]
         struct State;

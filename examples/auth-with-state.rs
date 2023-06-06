@@ -106,10 +106,9 @@ async fn main() -> Result<(), ServerError> {
         authtoken: "867-5309",
     });
 
-    app.get("/wildcard/*", compose_handler!(wildcard)).unwrap();
-    app.get("/auth/:name", compose_handler!(validate_authtoken, hello))
-        .unwrap();
-    app.get("/:name", compose_handler!(hello)).unwrap();
+    app.get("/wildcard/*", compose_handler!(wildcard))?;
+    app.get("/auth/:name", compose_handler!(validate_authtoken, hello))?;
+    app.get("/:name", compose_handler!(hello))?;
 
     app.serve("127.0.0.1:3000").await?;
 

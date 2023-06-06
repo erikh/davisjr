@@ -1,7 +1,7 @@
 use http::{Request, Response};
 use hyper::Body;
 
-use crate::{app::App, handler::Handler, path::Path, Error, HTTPResult, TransientState};
+use crate::{app::App, errors::*, handler::Handler, path::Path, HTTPResult, TransientState};
 
 #[derive(Clone)]
 pub(crate) struct Route<S: Clone + Send, T: TransientState + 'static> {
@@ -34,7 +34,11 @@ impl<S: Clone + Send, T: TransientState> Ord for Route<S, T> {
 }
 
 impl<S: Clone + Send, T: TransientState> Route<S, T> {
-    fn new(method: http::Method, path: String, handler: Handler<S, T>) -> Result<Self, Error> {
+    fn new(
+        method: http::Method,
+        path: String,
+        handler: Handler<S, T>,
+    ) -> Result<Self, ServerError> {
         Ok(Self {
             method,
             handler,
@@ -75,7 +79,7 @@ impl<S: Clone + Send, T: TransientState + Clone + Send> Router<S, T> {
         method: http::Method,
         path: String,
         ch: Handler<S, T>,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, ServerError> {
         self.0.push(Route::new(method, path, ch)?);
         Ok(self.clone())
     }

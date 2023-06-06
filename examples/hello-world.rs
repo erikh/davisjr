@@ -22,7 +22,7 @@ async fn hello(
 #[tokio::main]
 async fn main() -> Result<(), ServerError> {
     let mut app = App::new();
-    app.get("/:name", compose_handler!(hello)).unwrap();
+    app.get("/:name", compose_handler!(hello))?;
 
     #[cfg(feature = "unix")]
     {

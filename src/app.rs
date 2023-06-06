@@ -9,7 +9,7 @@ use std::path::PathBuf;
 #[cfg(feature = "unix")]
 use tokio::net::UnixListener;
 
-use crate::{handler::Handler, router::Router, Error, ServerError, TransientState};
+use crate::{errors::*, handler::Handler, router::Router, TransientState};
 
 /// App is used to define application-level functionality and initialize the server. Routes are
 /// typically programmed here.
@@ -38,7 +38,7 @@ use crate::{handler::Handler, router::Router, Error, ServerError, TransientState
 ///   #[tokio::main]
 ///   async fn main() -> Result<(), ServerError> {
 ///     let app = App::new();
-///     app.get("/*/item/:item", compose_handler!(item)).unwrap();
+///     app.get("/*/item/:item", compose_handler!(item))?;
 ///     app.serve("localhost:0").await
 ///   }
 /// ```
@@ -101,63 +101,63 @@ impl<S: 'static + Clone + Send, T: TransientState + 'static + Clone + Send> App<
 
     /// Create a route for a GET request. See App's docs and [crate::handler::Handler] for
     /// more information.
-    pub fn get(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), Error> {
+    pub fn get(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), ServerError> {
         self.router.add(Method::GET, path.to_string(), ch)?;
         Ok(())
     }
 
     /// Create a route for a POST request. See App's docs and [crate::handler::Handler] for
     /// more information.
-    pub fn post(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), Error> {
+    pub fn post(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), ServerError> {
         self.router.add(Method::POST, path.to_string(), ch)?;
         Ok(())
     }
 
     /// Create a route for a DELETE request. See App's docs and [crate::handler::Handler] for
     /// more information.
-    pub fn delete(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), Error> {
+    pub fn delete(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), ServerError> {
         self.router.add(Method::DELETE, path.to_string(), ch)?;
         Ok(())
     }
 
     /// Create a route for a PUT request. See App's docs and [crate::handler::Handler] for
     /// more information.
-    pub fn put(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), Error> {
+    pub fn put(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), ServerError> {
         self.router.add(Method::PUT, path.to_string(), ch)?;
         Ok(())
     }
 
     /// Create a route for an OPTIONS request. See App's docs and
     /// [crate::handler::Handler] for more information.
-    pub fn options(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), Error> {
+    pub fn options(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), ServerError> {
         self.router.add(Method::OPTIONS, path.to_string(), ch)?;
         Ok(())
     }
 
     /// Create a route for a PATCH request. See App's docs and
     /// [crate::handler::Handler] for more information.
-    pub fn patch(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), Error> {
+    pub fn patch(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), ServerError> {
         self.router.add(Method::PATCH, path.to_string(), ch)?;
         Ok(())
     }
 
     /// Create a route for a HEAD request. See App's docs and
     /// [crate::handler::Handler] for more information.
-    pub fn head(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), Error> {
+    pub fn head(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), ServerError> {
         self.router.add(Method::HEAD, path.to_string(), ch)?;
         Ok(())
     }
 
     /// Create a route for a CONNECT request. See App's docs and
     /// [crate::handler::Handler] for more information.
-    pub fn connect(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), Error> {
+    pub fn connect(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), ServerError> {
         self.router.add(Method::CONNECT, path.to_string(), ch)?;
         Ok(())
     }
 
     /// Create a route for a TRACE request. See App's docs and
     /// [crate::handler::Handler] for more information.
-    pub fn trace(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), Error> {
+    pub fn trace(&mut self, path: &str, ch: Handler<S, T>) -> Result<(), ServerError> {
         self.router.add(Method::TRACE, path.to_string(), ch)?;
         Ok(())
     }
@@ -246,11 +246,11 @@ impl<S: 'static + Clone + Send, T: TransientState + 'static + Clone + Send> App<
                     .await
                 {
                     #[cfg(feature = "logging")]
-                    log::error!("Error while serving HTTP connection: {}", http_err);
+                    log::error!("ServerError while serving HTTP connection: {}", http_err);
                     #[cfg(feature = "trace")]
-                    tracing::error!("Error while serving HTTP connection: {}", http_err);
+                    tracing::error!("ServerError while serving HTTP connection: {}", http_err);
                     #[cfg(all(not(feature = "trace"), not(feature = "logging")))]
-                    eprintln!("Error while serving HTTP connection: {}", http_err);
+                    eprintln!("ServerError while serving HTTP connection: {}", http_err);
                 }
             });
         }
@@ -286,11 +286,11 @@ impl<S: 'static + Clone + Send, T: TransientState + 'static + Clone + Send> App<
                     .await
                 {
                     #[cfg(feature = "logging")]
-                    log::error!("Error while serving HTTP connection: {}", http_err);
+                    log::error!("ServerError while serving HTTP connection: {}", http_err);
                     #[cfg(feature = "trace")]
-                    tracing::error!("Error while serving HTTP connection: {}", http_err);
+                    tracing::error!("ServerError while serving HTTP connection: {}", http_err);
                     #[cfg(all(not(feature = "trace"), not(feature = "logging")))]
-                    eprintln!("Error while serving HTTP connection: {}", http_err);
+                    eprintln!("ServerError while serving HTTP connection: {}", http_err);
                 }
             });
         }
@@ -335,20 +335,23 @@ impl<S: 'static + Clone + Send, T: TransientState + 'static + Clone + Send> App<
                             .await
                         {
                             #[cfg(feature = "logging")]
-                            log::error!("Error while serving HTTP connection: {}", http_err);
+                            log::error!("ServerError while serving HTTP connection: {}", http_err);
                             #[cfg(feature = "trace")]
-                            tracing::error!("Error while serving HTTP connection: {}", http_err);
+                            tracing::error!(
+                                "ServerError while serving HTTP connection: {}",
+                                http_err
+                            );
                             #[cfg(all(not(feature = "trace"), not(feature = "logging")))]
-                            eprintln!("Error while serving HTTP connection: {}", http_err);
+                            eprintln!("ServerError while serving HTTP connection: {}", http_err);
                         }
                     }
                     Err(e) => {
                         #[cfg(feature = "logging")]
-                        log::error!("Error while serving TLS: {:?}", e);
+                        log::error!("ServerError while serving TLS: {:?}", e);
                         #[cfg(feature = "trace")]
-                        tracing::error!("Error while serving TLS: {:?}", e);
+                        tracing::error!("ServerError while serving TLS: {:?}", e);
                         #[cfg(all(not(feature = "trace"), not(feature = "logging")))]
-                        eprintln!("Error while serving TLS: {:?}", e);
+                        eprintln!("ServerError while serving TLS: {:?}", e);
                     }
                 }
             });

@@ -66,7 +66,7 @@ async fn main() -> Result<(), ServerError> {
     }
 
     let mut app = App::new();
-    app.get("/:name", compose_handler!(log, hello)).unwrap();
+    app.get("/:name", compose_handler!(log, hello))?;
 
     app.serve("127.0.0.1:3000").await?;
 
