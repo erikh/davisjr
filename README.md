@@ -8,9 +8,9 @@
 
 ## What davisjr is not
 
-- Complicated: `davisjr` is not especially designed for services with a large web of routes or complicated interactions with the HTTP protocol, such as SSE or Websockets (at this time, at least). `davisjr` is very focused on somewhat typical request/response cycles.
-- Verbose: `davisjr` tries very hard to make both its internals and your interaction with it _the simplest thing that could possibly work_. This means that your request handlers are functions you pass to a macro called `compose_handler!` which you pass to routing calls, and that likely, you won't be spending your time implementing complicated, extremely verbose traits or even need complicated understandings of how futures and `async` work.
-- Focused on one platform: while at this time we only directly support `tokio`, nothing is keeping us from moving into `smol` and `async-std`'s territory. The majority of `davisjr`'s use of `async` are futures that `tokio` ends up leveraging from a very high level.
+-   Complicated: `davisjr` is not especially designed for services with a large web of routes or complicated interactions with the HTTP protocol, such as SSE or Websockets (at this time, at least). `davisjr` is very focused on somewhat typical request/response cycles.
+-   Verbose: `davisjr` tries very hard to make both its internals and your interaction with it _the simplest thing that could possibly work_. This means that your request handlers are functions you pass to a macro called `compose_handler!` which you pass to routing calls, and that likely, you won't be spending your time implementing complicated, extremely verbose traits or even need complicated understandings of how futures and `async` work.
+-   Focused on one platform: while at this time we only directly support `tokio`, nothing is keeping us from moving into `smol` and `async-std`'s territory. The majority of `davisjr`'s use of `async` are futures that `tokio` ends up leveraging from a very high level.
 
 ## Example
 
@@ -127,10 +127,9 @@ async fn main() -> Result<(), ServerError> {
         authtoken: "867-5309",
     });
 
-    app.get("/wildcard/*", compose_handler!(wildcard)).unwrap();
-    app.get("/auth/:name", compose_handler!(validate_authtoken, hello))
-        .unwrap();
-    app.get("/:name", compose_handler!(hello)).unwrap();
+    app.get("/wildcard/*", compose_handler!(wildcard))?;
+    app.get("/auth/:name", compose_handler!(validate_authtoken, hello))?;
+    app.get("/:name", compose_handler!(hello))?;
 
     app.serve("127.0.0.1:3000").await?;
 
