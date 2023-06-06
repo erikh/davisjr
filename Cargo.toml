@@ -1,6 +1,6 @@
 [package]
 name = "davisjr"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 description = "davisjr is a HTTP framework designed around simplicity and ease-of-use"
 authors = ["Erik Hollensbe <erik+github@hollensbe.org>"]
