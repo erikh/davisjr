@@ -28,7 +28,7 @@ async fn hello(
     _app: App<(), NoState>,
     _state: NoState,
 ) -> HTTPResult<NoState> {
-    let name = params.get("name").unwrap();
+    let name = &params["name"];
 
     #[cfg(all(feature = "logging", not(feature = "trace")))]
     log::info!("Saying hello to {}", name);
