@@ -21,7 +21,7 @@ use hyper::Body;
 ///     _app: App<(), NoState>,
 ///     _state: NoState,
 /// ) -> HTTPResult<NoState> {
-///     let name = params.get("name").unwrap();
+///     let name = &params["name"];
 ///     let bytes = Body::from(format!("hello, {}!\n", name));
 ///
 ///     return Ok((

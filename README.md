@@ -71,7 +71,7 @@ async fn hello(
     _app: App<State, AuthedState>,
     authstate: AuthedState,
 ) -> HTTPResult<AuthedState> {
-    let name = params.get("name").unwrap();
+    let name = &params["name"];
     let bytes = Body::from(format!("hello, {}!\n", name));
 
     if let Some(authed) = authstate.authed {
@@ -104,7 +104,7 @@ async fn wildcard(
     _app: App<State, AuthedState>,
     state: AuthedState,
 ) -> HTTPResult<AuthedState> {
-    let bytes = Body::from(format!("this route is: {}!\n", params.get("*").unwrap()));
+    let bytes = Body::from(format!("this route is: {}!\n", params["*"]));
 
     return Ok((
         req,
