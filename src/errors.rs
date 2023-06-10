@@ -20,11 +20,19 @@ impl From<std::io::Error> for ServerError {
     }
 }
 
-impl Into<ServerError> for String {
-    fn into(self) -> ServerError {
-        ServerError(self)
+impl From<String> for ServerError {
+    fn from(value: String) -> Self {
+        Self(value)
     }
 }
+
+impl From<anyhow::Error> for ServerError {
+    fn from(value: anyhow::Error) -> Self {
+        ServerError(value.to_string())
+    }
+}
+
+impl std::error::Error for ServerError {}
 
 /// General errors for davisjr handlers. Yield either a StatusCode for a literal status, or a
 /// String for a 500 Internal Server Error. Other status codes should be yielded through
