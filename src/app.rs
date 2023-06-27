@@ -69,6 +69,12 @@ use crate::{errors::*, handler::Handler, router::Router, TransientState};
 pub struct App<S: Clone + Send, T: TransientState + 'static + Clone + Send> {
     router: Router<S, T>,
     global_state: Option<Arc<Mutex<S>>>,
+    #[cfg(all(feature = "logging", not(feature = "trace")))]
+    log_level: Option<log::Level>,
+    #[cfg(all(feature = "trace", not(feature = "logging")))]
+    log_level: Option<tracing::Level>,
+    #[cfg(all(feature = "trace", feature = "logging"))]
+    log_level: Option<tracing::Level>,
 }
 
 impl<S: 'static + Clone + Send, T: TransientState + 'static + Clone + Send> App<S, T> {
@@ -77,6 +83,8 @@ impl<S: 'static + Clone + Send, T: TransientState + 'static + Clone + Send> App<
         Self {
             router: Router::new(),
             global_state: None,
+            #[cfg(any(feature = "logging", feature = "trace"))]
+            log_level: None,
         }
     }
 
@@ -89,7 +97,54 @@ impl<S: 'static + Clone + Send, T: TransientState + 'static + Clone + Send> App<
         Self {
             router: Router::new(),
             global_state: Some(Arc::new(Mutex::new(state))),
+            #[cfg(any(feature = "logging", feature = "trace"))]
+            log_level: None,
         }
+    }
+
+    #[cfg(any(feature = "logging", feature = "trace"))]
+    pub fn with_log_level(
+        &mut self,
+        #[cfg(all(feature = "logging", not(feature = "trace")))] level: log::Level,
+        #[cfg(all(feature = "trace", not(feature = "logging")))] level: tracing::Level,
+    ) {
+        #[cfg(all(feature = "trace", feature = "logging"))]
+        {
+            self.log_level = None;
+        }
+        #[cfg(all(
+            not(all(feature = "trace", feature = "logging")),
+            any(feature = "trace", feature = "logging")
+        ))]
+        {
+            self.log_level = Some(level)
+        }
+    }
+
+    pub fn log(&self, msg: String) {
+        #[cfg(all(feature = "logging", not(feature = "trace")))]
+        match self.log_level {
+            None => log::info!(msg),
+            Some(log::Level::Info) => log::info!("{}", msg),
+            Some(log::Level::Warn) => log::warn!("{}", msg),
+            Some(log::Level::Error) => log::error!("{}", msg),
+            Some(log::Level::Debug) => log::debug!("{}", msg),
+            Some(log::Level::Trace) => log::trace!("{}", msg),
+        }
+        #[cfg(all(feature = "trace", not(feature = "logging")))]
+        match self.log_level {
+            None => tracing::info!(msg),
+            Some(tracing::Level::INFO) => tracing::info!("{}", msg),
+            Some(tracing::Level::WARN) => tracing::warn!("{}", msg),
+            Some(tracing::Level::ERROR) => tracing::error!("{}", msg),
+            Some(tracing::Level::DEBUG) => tracing::debug!("{}", msg),
+            Some(tracing::Level::TRACE) => tracing::trace!("{}", msg),
+        }
+        #[cfg(any(
+            all(feature = "trace", feature = "logging"),
+            not(any(feature = "trace", feature = "logging"))
+        ))]
+        eprintln!("{}", msg);
     }
 
     // FIXME Currently you must await this, seems pointless.
@@ -169,50 +224,25 @@ impl<S: 'static + Clone + Send, T: TransientState + 'static + Clone + Send> App<
         let _uri = req.uri().clone();
         let _method = req.method().clone();
 
-        #[cfg(all(feature = "logging", not(feature = "trace")))]
-        log::info!("{} request to {}", _method, _uri);
-
-        #[cfg(feature = "trace")]
-        tracing::info!("{} request to {}", _method, _uri);
+        self.log(format!("{} request to {}", _method, _uri));
 
         match self.router.dispatch(req, self.clone()).await {
             Ok(resp) => {
                 let _status = resp.status().clone();
 
-                #[cfg(all(feature = "logging", not(feature = "trace")))]
-                log::info!(
+                self.log(format!(
                     "{} request to {}: responding with status {}",
-                    _method,
-                    _uri,
-                    _status,
-                );
-
-                #[cfg(feature = "trace")]
-                tracing::info!(
-                    "{} request to {}: responding with status {}",
-                    _method,
-                    _uri,
-                    _status,
-                );
+                    _method, _uri, _status
+                ));
 
                 Ok(resp)
             }
             Err(e) => {
-                #[cfg(all(feature = "logging", not(feature = "trace")))]
-                log::error!(
-                    "{} request to {}: responding with error {:?}",
-                    _method,
-                    _uri,
-                    e,
-                );
+                self.log(format!(
+                    "{} request to {}: responding with status {}",
+                    _method, _uri, e
+                ));
 
-                #[cfg(feature = "trace")]
-                tracing::error!(
-                    "{} request to {}: responding with error {:?}",
-                    _method,
-                    _uri,
-                    e,
-                );
                 match e.clone() {
                     Error::StatusCode(sc, msg) => Ok(Response::builder()
                         .status(sc)
@@ -239,18 +269,18 @@ impl<S: 'static + Clone + Send, T: TransientState + 'static + Clone + Send> App<
                 async move { s.clone().dispatch(req).await }
             });
 
+            let obj = self.clone();
+
             tokio::task::spawn(async move {
                 if let Err(http_err) = Http::new()
                     .http1_keep_alive(true)
                     .serve_connection(stream, sfn)
                     .await
                 {
-                    #[cfg(feature = "logging")]
-                    log::error!("ServerError while serving HTTP connection: {}", http_err);
-                    #[cfg(feature = "trace")]
-                    tracing::error!("ServerError while serving HTTP connection: {}", http_err);
-                    #[cfg(all(not(feature = "trace"), not(feature = "logging")))]
-                    eprintln!("ServerError while serving HTTP connection: {}", http_err);
+                    obj.log(format!(
+                        "ServerError while serving HTTP connection: {}",
+                        http_err
+                    ));
                 }
             });
         }
@@ -258,7 +288,7 @@ impl<S: 'static + Clone + Send, T: TransientState + 'static + Clone + Send> App<
 
     /// Start a TCP/HTTP server with tokio. Performs dispatch on an as-needed basis. This is a more
     /// common path for users to start a server.
-    pub async fn serve(self, addr: &str) -> Result<(), ServerError> {
+    pub async fn serve(&self, addr: &str) -> Result<(), ServerError> {
         let socketaddr: SocketAddr = addr.parse()?;
 
         let tcp_listener = TcpListener::bind(socketaddr).await?;
@@ -273,11 +303,8 @@ impl<S: 'static + Clone + Send, T: TransientState + 'static + Clone + Send> App<
                 async move { s.clone().dispatch(req).await }
             });
 
-            #[cfg(all(feature = "logging", not(feature = "trace")))]
-            log::trace!("Request from {}", sa);
-
-            #[cfg(feature = "trace")]
-            tracing::trace!("Request from {}", sa);
+            self.log(format!("Request from {}", sa));
+            let obj = self.clone();
 
             tokio::task::spawn(async move {
                 if let Err(http_err) = Http::new()
@@ -285,12 +312,10 @@ impl<S: 'static + Clone + Send, T: TransientState + 'static + Clone + Send> App<
                     .serve_connection(tcp_stream, sfn)
                     .await
                 {
-                    #[cfg(feature = "logging")]
-                    log::error!("ServerError while serving HTTP connection: {}", http_err);
-                    #[cfg(feature = "trace")]
-                    tracing::error!("ServerError while serving HTTP connection: {}", http_err);
-                    #[cfg(all(not(feature = "trace"), not(feature = "logging")))]
-                    eprintln!("ServerError while serving HTTP connection: {}", http_err);
+                    obj.log(format!(
+                        "ServerError while serving HTTP connection: {}",
+                        http_err
+                    ));
                 }
             });
         }
@@ -319,11 +344,8 @@ impl<S: 'static + Clone + Send, T: TransientState + 'static + Clone + Send> App<
                 async move { s.clone().dispatch(req).await }
             });
 
-            #[cfg(all(feature = "logging", not(feature = "trace")))]
-            log::trace!("Request from {}", sa);
-
-            #[cfg(feature = "trace")]
-            tracing::trace!("Request from {}", sa);
+            self.log(format!("Request from {}", sa));
+            let obj = self.clone();
 
             let config = config.clone();
             tokio::task::spawn(async move {
@@ -334,24 +356,14 @@ impl<S: 'static + Clone + Send, T: TransientState + 'static + Clone + Send> App<
                             .serve_connection(tcp_stream, sfn)
                             .await
                         {
-                            #[cfg(feature = "logging")]
-                            log::error!("ServerError while serving HTTP connection: {}", http_err);
-                            #[cfg(feature = "trace")]
-                            tracing::error!(
+                            obj.log(format!(
                                 "ServerError while serving HTTP connection: {}",
                                 http_err
-                            );
-                            #[cfg(all(not(feature = "trace"), not(feature = "logging")))]
-                            eprintln!("ServerError while serving HTTP connection: {}", http_err);
+                            ));
                         }
                     }
                     Err(e) => {
-                        #[cfg(feature = "logging")]
-                        log::error!("ServerError while serving TLS: {:?}", e);
-                        #[cfg(feature = "trace")]
-                        tracing::error!("ServerError while serving TLS: {:?}", e);
-                        #[cfg(all(not(feature = "trace"), not(feature = "logging")))]
-                        eprintln!("ServerError while serving TLS: {:?}", e);
+                        obj.log(format!("ServerError while serving TLS: {:?}", e));
                     }
                 }
             });
