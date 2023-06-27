@@ -102,6 +102,9 @@ impl<S: 'static + Clone + Send, T: TransientState + 'static + Clone + Send> App<
         }
     }
 
+    /// Log app events with a specific level. If this is not provided, the `info` level will be
+    /// chosen for tracing and log packages respectively. This constrains them all to use a
+    /// specific log level.
     #[cfg(any(feature = "logging", feature = "trace"))]
     pub fn with_log_level(
         &mut self,
@@ -121,7 +124,7 @@ impl<S: 'static + Clone + Send, T: TransientState + 'static + Clone + Send> App<
         }
     }
 
-    pub fn log(&self, msg: String) {
+    fn log(&self, msg: String) {
         #[cfg(all(feature = "logging", not(feature = "trace")))]
         match self.log_level {
             None => log::info!(msg),
