@@ -26,12 +26,6 @@ impl From<String> for ServerError {
     }
 }
 
-impl From<anyhow::Error> for ServerError {
-    fn from(value: anyhow::Error) -> Self {
-        ServerError(value.to_string())
-    }
-}
-
 impl std::error::Error for ServerError {}
 
 /// General errors for davisjr handlers. Yield either a StatusCode for a literal status, or a
@@ -67,12 +61,21 @@ impl Error {
     }
 }
 
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::StatusCode(code, message) => f.write_str(&format!("{}: {}", code, message)),
+            Self::InternalServerError(ise) => f.write_str(&format!("Error: {}", ise.to_string())),
+        }
+    }
+}
+
 impl<T> From<T> for Error
 where
-    T: ToString,
+    T: std::error::Error,
 {
-    fn from(t: T) -> Self {
-        Self::new(t.to_string())
+    fn from(value: T) -> Self {
+        Self::new(value.to_string())
     }
 }
 
