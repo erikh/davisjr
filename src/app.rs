@@ -249,11 +249,11 @@ impl<S: 'static + Clone + Send, T: TransientState + 'static + Clone + Send> App<
                 match e.clone() {
                     Error::StatusCode(sc, msg) => Ok(Response::builder()
                         .status(sc)
-                        .body(Body::from(msg))
+                        .body(Body::from(msg + "\n"))
                         .unwrap()),
                     Error::InternalServerError(e) => Ok(Response::builder()
                         .status(StatusCode::INTERNAL_SERVER_ERROR)
-                        .body(Body::from(e.to_string()))
+                        .body(Body::from(e.to_string() + "\n"))
                         .unwrap()),
                 }
             }
