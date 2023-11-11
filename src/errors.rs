@@ -1,3 +1,5 @@
+use anyhow::anyhow;
+
 /// An error for server-related issues.
 #[derive(Debug, Clone)]
 pub struct ServerError(pub String);
@@ -5,6 +7,12 @@ pub struct ServerError(pub String);
 impl std::fmt::Display for ServerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.0)
+    }
+}
+
+impl From<Error> for anyhow::Error {
+    fn from(value: Error) -> Self {
+        anyhow!(value.to_string())
     }
 }
 
