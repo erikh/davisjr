@@ -10,12 +10,6 @@ impl std::fmt::Display for ServerError {
     }
 }
 
-impl From<Error> for anyhow::Error {
-    fn from(value: Error) -> Self {
-        anyhow!(value.to_string())
-    }
-}
-
 impl From<std::net::AddrParseError> for ServerError {
     fn from(value: std::net::AddrParseError) -> Self {
         Self(value.to_string())
@@ -84,6 +78,12 @@ where
 {
     fn from(value: T) -> Self {
         Self::new(value.to_string())
+    }
+}
+
+impl Into<anyhow::Error> for Error {
+    fn into(self) -> anyhow::Error {
+        anyhow!(self.to_string())
     }
 }
 
