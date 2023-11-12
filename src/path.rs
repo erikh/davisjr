@@ -1,6 +1,6 @@
 use crate::{errors::*, Params};
 
-#[derive(Debug, Clone, PartialOrd, PartialEq)]
+#[derive(Debug, Clone, PartialOrd, Ord, PartialEq, Eq)]
 pub(crate) enum RoutePart {
     Wildcard,
     PathComponent(String),
@@ -8,10 +8,14 @@ pub(crate) enum RoutePart {
     Leader,
 }
 
-#[derive(Debug, Clone, PartialOrd)]
+#[derive(Debug, Clone, Eq)]
 pub(crate) struct Path(Vec<RoutePart>);
 
-impl Eq for Path {}
+impl PartialOrd for Path {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
 
 impl Ord for Path {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
@@ -23,24 +27,24 @@ impl Path {
     pub(crate) fn new(path: String) -> Result<Self, ServerError> {
         let mut parts = Self::default();
 
-        let path = path.trim_end_matches("/");
+        let path = path.trim_end_matches('/');
 
-        if !path.contains("/") {
+        if !path.contains('/') {
             return Ok(Self::default());
         }
 
-        let args = path.split("/");
+        let args = path.split('/');
         let mut wildcard = false;
 
         for arg in args {
-            if arg.starts_with(":") {
+            if arg.starts_with(':') {
                 // is param
                 if wildcard {
                     return Err(ServerError(
                         "params may not immediately follow wildcards due to ambiguity".to_string(),
                     ));
                 } else {
-                    parts.push(RoutePart::Param(arg.trim_start_matches(":").to_string()));
+                    parts.push(RoutePart::Param(arg.trim_start_matches(':').to_string()));
                 };
             } else if arg == "*" {
                 if wildcard {
@@ -51,12 +55,13 @@ impl Path {
                     parts.push(RoutePart::Wildcard);
                     wildcard = true;
                 };
-            } else if arg == "" {
+            } else if arg.is_empty() {
                 // skip empties. this will push additional leaders if there is an duplicate slash
                 // (e.g.: `//one/two`), which will fail on matching; we don't want to support this
                 // syntax in the router.
             } else {
                 // is not param
+                //
                 parts.push(RoutePart::PathComponent(arg.to_string()));
                 wildcard = false;
             }
@@ -75,9 +80,8 @@ impl Path {
     pub(crate) fn params(&self) -> Vec<String> {
         let mut params = Vec::new();
         for arg in self.0.clone() {
-            match arg {
-                RoutePart::Param(p) => params.push(p),
-                _ => {}
+            if let RoutePart::Param(p) = arg {
+                params.push(p);
             }
         }
 
@@ -85,9 +89,9 @@ impl Path {
     }
 
     pub(crate) fn extract(&self, provided: String) -> Result<Params, ServerError> {
-        let trimmed = provided.trim_end_matches("/");
+        let trimmed = provided.trim_end_matches('/');
 
-        if trimmed == "" && self.eq(&Self::default()) {
+        if trimmed.is_empty() && self.eq(&Self::default()) {
             return Ok(Params::default());
         }
 
@@ -98,7 +102,7 @@ impl Path {
         let mut params = Params::default();
 
         let parts: Vec<String> = trimmed
-            .split("/")
+            .split('/')
             .map(|s| s.to_string())
             .collect::<Vec<String>>();
 
@@ -186,15 +190,12 @@ impl PartialEq for Path {
                         if self.0.len() < i + 1 {
                             let next = &self.0[i + 1];
 
-                            match next {
-                                RoutePart::PathComponent(_) => {
-                                    if next == &arg {
-                                        i += 1; // it will be incremented twice due to wildcard == false
-                                        wildcard = false;
-                                    }
+                            if let RoutePart::PathComponent(_) = next {
+                                if next == &arg {
+                                    i += 1; // it will be incremented twice due to wildcard == false
+                                    wildcard = false;
                                 }
-                                _ => {}
-                            };
+                            }
                         }
                     } else {
                         wildcard = true
@@ -220,7 +221,7 @@ impl PartialEq for Path {
                 return false;
             }
 
-            if wildcard == false {
+            if !wildcard {
                 i += 1;
             }
         }

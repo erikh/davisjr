@@ -77,10 +77,10 @@ where
         let (req, response, state) =
             (self.handler)(req, response, params.clone(), app.clone(), state).await?;
         if self.next.is_some() {
-            return Ok((*self.clone().next)
+            return (*self.clone().next)
                 .unwrap()
                 .perform(req, response, params, app, state)
-                .await?);
+                .await;
         }
 
         Ok((req, response, state))

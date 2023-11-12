@@ -67,7 +67,7 @@ impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::StatusCode(code, message) => f.write_str(&format!("{}: {}", code, message)),
-            Self::InternalServerError(ise) => f.write_str(&format!("Error: {}", ise.to_string())),
+            Self::InternalServerError(ise) => f.write_str(&format!("Error: {}", ise)),
         }
     }
 }
@@ -81,9 +81,9 @@ where
     }
 }
 
-impl Into<anyhow::Error> for Error {
-    fn into(self) -> anyhow::Error {
-        anyhow!(self.to_string())
+impl From<Error> for anyhow::Error {
+    fn from(value: Error) -> Self {
+        anyhow!(value.to_string())
     }
 }
 

@@ -77,6 +77,12 @@ pub struct App<S: Clone + Send, T: TransientState + 'static + Clone + Send> {
     log_level: Option<tracing::Level>,
 }
 
+impl<S: 'static + Clone + Send, T: TransientState + 'static + Clone + Send> Default for App<S, T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<S: 'static + Clone + Send, T: TransientState + 'static + Clone + Send> App<S, T> {
     /// Construct a new App with no state; it will be passed to handlers as `App<()>`.
     pub fn new() -> Self {
@@ -224,18 +230,18 @@ impl<S: 'static + Clone + Send, T: TransientState + 'static + Clone + Send> App<
     /// handler chain following the normal chain of responsibility rules described elsewhere. Only
     /// needed by server implementors.
     pub async fn dispatch(&self, req: Request<Body>) -> Result<Response<Body>, Infallible> {
-        let _uri = req.uri().clone();
-        let _method = req.method().clone();
+        let uri = req.uri().clone();
+        let method = req.method().clone();
 
-        self.log(format!("{} request to {}", _method, _uri));
+        self.log(format!("{} request to {}", method, uri));
 
         match self.router.dispatch(req, self.clone()).await {
             Ok(resp) => {
-                let _status = resp.status().clone();
+                let status = resp.status();
 
                 self.log(format!(
                     "{} request to {}: responding with status {}",
-                    _method, _uri, _status
+                    method, uri, status
                 ));
 
                 Ok(resp)
@@ -243,7 +249,7 @@ impl<S: 'static + Clone + Send, T: TransientState + 'static + Clone + Send> App<
             Err(e) => {
                 self.log(format!(
                     "{} request to {}: responding with status {}",
-                    _method, _uri, e
+                    method, uri, e
                 ));
 
                 match e.clone() {
